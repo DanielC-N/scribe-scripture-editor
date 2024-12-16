@@ -5,6 +5,9 @@ import { useTranslation } from 'react-i18next';
 import { ReferenceContext } from '@/components/context/ReferenceContext';
 import { ProjectContext } from '@/components/context/ProjectContext';
 import ResourcesPopUp from '@/components/Resources/ResourcesPopUp';
+import { readRefBurrito } from 'src/core/reference/readRefBurrito.js';
+import { readFile } from 'src/core/editor/readFile';
+import ChecksContent from '@/components/EditorPage/TextEditor/ChecksContent';
 import { classNames } from '@/util/classNames';
 import TaNavigation from '@/components/EditorPage/Reference/TA/TaNavigation';
 import TwNavigation from '@/components/EditorPage/Reference/TW/TwNavigation';
@@ -13,8 +16,15 @@ import MenuDropdown from '@/components/MenuDropdown/MenuDropdown';
 import AdjustmentsVerticalIcon from '@/icons/Common/AdjustmentsVertical.svg';
 import XMarkIcon from '@/icons/Common/XMark.svg';
 import SquaresPlusIcon from '@/icons/Common/SquaresPlus.svg';
+import { Cog8ToothIcon } from '@heroicons/react/24/outline';
 import ConfirmationModal from './ConfirmationModal';
 import * as logger from '../../logger';
+import packageInfo from '../../../../package.json';
+import localforage from 'localforage';
+import checker from 'perf-checks';
+import { Proskomma } from 'proskomma-core';
+import CheckSelector from './CheckSelector';
+// import ScriptureContentPicker from '@/components/ScriptureContentPicker/ScriptureContentPicker.tsx';
 
 export default function EditorSection({
   title,
@@ -46,10 +56,14 @@ export default function EditorSection({
   const [openResourcePopUp, setOpenResourcePopUp] = useState(false);
   const [openModal, setOpenModal] = useState(false);
   const [projectScriptureDir, setProjectScriptureDir] = useState();
+  const [contentChecks, setContentChecks] = useState({});
+  const [choosingSourceLang, setChoosingSourceLang] = useState(false);
+  const [referenceSourceLang, setReferenceSourceLang] = useState({});
   const { t } = useTranslation();
   const {
     state: {
       layout,
+      bookId,
       openResource1,
       openResource2,
       openResource3,
@@ -57,6 +71,25 @@ export default function EditorSection({
     },
     actions: { setLayout },
   } = useContext(ReferenceContext);
+  // const {
+  //   state: {
+  //     bookId,
+  //     bookList,
+  //     bookName,
+  //     chapter,
+  //     verse,
+  //     chapterList,
+  //     verseList,
+  //     languageId,
+  //     //  closeNavigation,
+  //   }, actions: {
+  //     onChangeBook,
+  //     onChangeChapter,
+  //     onChangeVerse,
+  //     applyBooksFilter,
+  //     setCloseNavigation,
+  //   },
+  // } = useContext(ReferenceContext);
   const {
     states: { scrollLock, selectedProjectMeta },
   } = useContext(ProjectContext);
@@ -120,6 +153,13 @@ export default function EditorSection({
   });
 
   const showResourcesPanel = () => {
+    setChoosingSourceLang(false);
+    setOpenResourcePopUp(true);
+    setLoadResource(true);
+  };
+
+  const showResourcesPanelFromChecks = () => {
+    setChoosingSourceLang(true);
     setOpenResourcePopUp(true);
     setLoadResource(true);
   };
@@ -168,8 +208,63 @@ export default function EditorSection({
     }
   };
 
+  const checks = async () => {
+    const fse = window.require('fs-extra');
+    const path = window.require('path');
+
+    // const usfmContent = { usfm: "\\id MRK" };
+    const userProfile = await localforage.getItem('userProfile');
+    const userName = userProfile?.username;
+    const projectName = await localforage.getItem('currentProject');
+    const newpath = localStorage.getItem('userPath');
+    const metaPath = path.join(newpath, packageInfo.name, 'users', userName, 'projects', projectName, 'metadata.json');
+    const metaData = JSON.parse(await readRefBurrito({ metaPath }));
+    const filePath = path.join(newpath, packageInfo.name, 'config_checks.json');
+    let spec = {};
+    try {
+      spec = fse.readJsonSync(filePath);
+    } catch (error) {
+      logger.error(
+        'EditorSection.js',
+        'Unable to open config_checks.json',
+      );
+    }
+    const _books = [];
+    Object.entries(metaData.ingredients).forEach(async ([key, _ingredients]) => {
+      if (_ingredients.scope) {
+        const _bookID = Object.entries(_ingredients.scope)[0][0];
+        const bookObj = { bookId: _bookID, fileName: key };
+        _books.push(bookObj);
+      }
+    });
+    const [currentBook] = _books.filter((bookObj) => bookObj.bookId === bookId?.toUpperCase());
+    // const projectCachePath = path.join(newpath, packageInfo.name, 'users', userName, 'project_cache', projectName);
+    if (currentBook) {
+      const fileData = await readFile({ projectname: projectName, filename: currentBook.fileName, username: userName });
+      const book = {
+        selectors: { org: 'unfoldingWord', lang: 'en', abbr: 'ult' },
+        bookCode: currentBook.bookId?.toLowerCase(),
+        data: fileData,
+      };
+      // setUsfmData(books);
+      const usfmContent = book.data;
+      const pk = new Proskomma();
+      const selectors = {
+        lang: 'xxx',
+        abbr: 'yyy',
+      }
+      pk.importDocuments(selectors, 'usfm', [usfmContent]);
+      const perfResultDocument = pk.gqlQuerySync('{documents {perf} }').data.documents[0];
+      const perf = JSON.parse(perfResultDocument.perf);
+      if (perf && spec.checks && spec.checks.length > 0) {
+        let ret = checker({ content: { perf }, spec, contentType: "perf" });
+        setContentChecks(ret);
+      }
+    }
+  }
+
   useEffect(() => {
-    // Since we are adding reference resources from different places the data we have are inconsistant.
+    // Since we are adding reference resources from different places we have inconsistant data.
     // Looking for flavor from the flavors because flavor is only available for scripture and gloss(obs), not for Translation resources
     const flavors = ['obs', 'bible', 'audio'];
     if (
@@ -304,6 +399,18 @@ export default function EditorSection({
                   showIcon={false}
                 />
                 <button
+                  type="button"
+                  className="px-2"
+                  onClick={() => {
+                    referenceResources.selectedResource = 'checks';
+                    setLoadResource(true);
+                    setReferenceResources(referenceResources);
+                    checks();
+                  }}
+                >
+                  <Cog8ToothIcon className="h-5 w-5 text-dark" />
+                </button>
+                <button
                   aria-label="resources-selector"
                   type="button"
                   title={t(
@@ -327,10 +434,10 @@ export default function EditorSection({
           </div>
         </div>
 
-        {loadResource === false ? (
-          <div className="w-full h-full  flex  items-center justify-center prose-sm p-4 text-xl">
+        {loadResource === false && referenceResources.selectedResource !== 'checks' ? (
+          <div className="w-full h-full flex items-center justify-center prose-sm p-4 text-xl">
             <div className="text-center">
-              <div className="text-xs uppercase pb-4">
+              <div className="p-5 text-xs uppercase pb-4">
                 {t('label-editor-load-module')}
               </div>
               <button
@@ -344,8 +451,31 @@ export default function EditorSection({
                 />
               </button>
             </div>
+            {selectedProjectMeta?.type?.flavorType?.flavor?.name == 'textTranslation' &&
+            (<div className="text-center">
+              <div className="p-5 text-xs uppercase pb-4">
+                {"Open checks"}
+              </div>
+              <button
+                type="button"
+                className="p-4 bg-gray-200 rounded-lg ring-offset-1"
+                onClick={() => {
+                  let copyRefResources = referenceResources;
+                  referenceResources.selectedResource = 'checks';
+                  setLoadResource(true);
+                  setReferenceResources(referenceResources);
+                  checks();
+                }}
+              >
+                <Cog8ToothIcon
+                  aria-label="close-lock"
+                  className="h-5 w-5"
+                  aria-hidden="true"
+                />
+              </button>
+            </div>)}
           </div>
-        ) : (
+        ) : referenceResources.selectedResource !== 'checks' ? (
           <div
             style={{
               fontFamily: 'sans-serif',
@@ -359,10 +489,20 @@ export default function EditorSection({
           >
             {children}
           </div>
+        ) : (
+          <>
+            <CheckSelector
+              showResourcesPanel={showResourcesPanelFromChecks}
+            />
+            <ChecksContent
+              content={contentChecks}
+              updateContent={checks}
+            />
+          </>
         )}
 
         {/* //div 12 */}
-        {openResourcePopUp && (
+        { openResourcePopUp && (
           <div className="fixed z-50 ">
             <ResourcesPopUp
               column={row}
@@ -373,6 +513,8 @@ export default function EditorSection({
               openResourcePopUp={openResourcePopUp}
               setOpenResourcePopUp={setOpenResourcePopUp}
               selectedProjectMeta={selectedProjectMeta}
+              choosingSourceLang={choosingSourceLang}
+              setReferenceSourceLang={setReferenceSourceLang}
             />
           </div>
         )}
