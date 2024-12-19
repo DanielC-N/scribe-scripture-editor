@@ -22,8 +22,10 @@ import * as logger from '../../logger';
 import packageInfo from '../../../../package.json';
 import localforage from 'localforage';
 import checker from 'perf-checks';
+import { getAvailableChecks, checks } from 'bible-checker';
 import { Proskomma } from 'proskomma-core';
 import CheckSelector from './CheckSelector';
+import { convertUsfmToUsj } from '@/components/EditorPage/TextEditor/conversionUtils.js';
 // import ScriptureContentPicker from '@/components/ScriptureContentPicker/ScriptureContentPicker.tsx';
 
 export default function EditorSection({
@@ -208,7 +210,7 @@ export default function EditorSection({
     }
   };
 
-  const checks = async () => {
+  const doChecks = async () => {
     const fse = window.require('fs-extra');
     const path = window.require('path');
 
@@ -248,18 +250,31 @@ export default function EditorSection({
       };
       // setUsfmData(books);
       const usfmContent = book.data;
-      const pk = new Proskomma();
-      const selectors = {
-        lang: 'xxx',
-        abbr: 'yyy',
+      // const pk = new Proskomma();
+      // const selectors = {
+      //   lang: 'xxx',
+      //   abbr: 'yyy',
+      // }
+      // pk.importDocuments(selectors, 'usfm', [usfmContent]);
+      // const perfResultDocument = pk.gqlQuerySync('{documents {perf} }').data.documents[0];
+      // const perf = JSON.parse(perfResultDocument.perf);
+      // if (perf && spec.checks && spec.checks.length > 0) {
+        //   let ret = checker({ content: { perf }, spec, contentType: "perf" });
+        //   setContentChecks(ret);
+        // }
+        // recipe[0].enabled = true; // Enable short/long verses check
+      const recipe = getAvailableChecks();
+      recipe[1].enabled = true; // Enable chapter/verse integrity check
+      console.log("recipe ==",recipe);
+      const { usj, error } = await convertUsfmToUsj(usfmContent);
+      if (error) {
+        console.error('Error parsing USFM:', error);
+        return { error, usj: null }; // Return consistent error object
       }
-      pk.importDocuments(selectors, 'usfm', [usfmContent]);
-      const perfResultDocument = pk.gqlQuerySync('{documents {perf} }').data.documents[0];
-      const perf = JSON.parse(perfResultDocument.perf);
-      if (perf && spec.checks && spec.checks.length > 0) {
-        let ret = checker({ content: { perf }, spec, contentType: "perf" });
-        setContentChecks(ret);
-      }
+      const usjStr = JSON.stringify(usj);
+      const response = await checks(usjStr, usjStr, recipe);
+      setContentChecks(response.checks);
+      console.log("response ==",response.checks);
     }
   }
 
@@ -405,7 +420,7 @@ export default function EditorSection({
                     referenceResources.selectedResource = 'checks';
                     setLoadResource(true);
                     setReferenceResources(referenceResources);
-                    checks();
+                    doChecks();
                   }}
                 >
                   <Cog8ToothIcon className="h-5 w-5 text-dark" />
@@ -464,7 +479,7 @@ export default function EditorSection({
                   referenceResources.selectedResource = 'checks';
                   setLoadResource(true);
                   setReferenceResources(referenceResources);
-                  checks();
+                  doChecks();
                 }}
               >
                 <Cog8ToothIcon
@@ -496,7 +511,7 @@ export default function EditorSection({
             />
             <ChecksContent
               content={contentChecks}
-              updateContent={checks}
+              updateContent={doChecks}
             />
           </>
         )}
