@@ -34,6 +34,7 @@ export default function LexicalEditor({
   useEffect(() => {
     if (usjInput) {
       setUsj(usjInput);
+      localStorage.setItem('usj', JSON.stringify(usjInput));
     }
   }, [usjInput]);
   useEffect(() => {

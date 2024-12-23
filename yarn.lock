@@ -6745,10 +6745,10 @@ bfj@^7.0.2:
     jsonpath "^1.1.1"
     tryer "^1.0.1"
 
-bible-checker@^0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/bible-checker/-/bible-checker-0.0.1.tgz#84c741588318546a96b80540988fa39c2b0f5847"
-  integrity sha512-kRfYzwcsczwvKGT6G5ZkROSxvWlk+HwCFiedQFe4ak3W80YTchWwb6TF1dkYOqog7MsbRtjzJw5IMZyXaeqyqw==
+bible-checker@^0.0.3:
+  version "0.0.3"
+  resolved "https://registry.yarnpkg.com/bible-checker/-/bible-checker-0.0.3.tgz#f14859ae4919b5707e3025b10152b21e1fd625bd"
+  integrity sha512-xGIOg5Nn41+wjURzDb4yxo8z/VkVv1Wk3+TxWuQE741u1dejpDYNai1izkdXC9l1Zz6ZcoNcg2uBT9J3AlK5xA==
 
 bible-reference-range@^1.1.0:
   version "1.1.1"

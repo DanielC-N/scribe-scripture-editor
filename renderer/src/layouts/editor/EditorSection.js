@@ -21,11 +21,11 @@ import ConfirmationModal from './ConfirmationModal';
 import * as logger from '../../logger';
 import packageInfo from '../../../../package.json';
 import localforage from 'localforage';
-import checker from 'perf-checks';
+// import checker from 'perf-checks';
 import { getAvailableChecks, checks } from 'bible-checker';
-import { Proskomma } from 'proskomma-core';
+// import { Proskomma } from 'proskomma-core';
 import CheckSelector from './CheckSelector';
-import { convertUsfmToUsj } from '@/components/EditorPage/TextEditor/conversionUtils.js';
+// import { convertUsfmToUsj } from '@/components/EditorPage/TextEditor/conversionUtils.js';
 // import ScriptureContentPicker from '@/components/ScriptureContentPicker/ScriptureContentPicker.tsx';
 
 export default function EditorSection({
@@ -61,6 +61,8 @@ export default function EditorSection({
   const [contentChecks, setContentChecks] = useState({});
   const [choosingSourceLang, setChoosingSourceLang] = useState(false);
   const [referenceSourceLang, setReferenceSourceLang] = useState({});
+  const [referenceSourceData, setReferenceSourceData] = useState(null);
+  const [recipe, setRecipe] = useState(getAvailableChecks());
   const { t } = useTranslation();
   const {
     state: {
@@ -210,6 +212,8 @@ export default function EditorSection({
     }
   };
 
+  const onReferenceClick = () => {}
+
   const doChecks = async () => {
     const fse = window.require('fs-extra');
     const path = window.require('path');
@@ -242,39 +246,27 @@ export default function EditorSection({
     const [currentBook] = _books.filter((bookObj) => bookObj.bookId === bookId?.toUpperCase());
     // const projectCachePath = path.join(newpath, packageInfo.name, 'users', userName, 'project_cache', projectName);
     if (currentBook) {
-      const fileData = await readFile({ projectname: projectName, filename: currentBook.fileName, username: userName });
-      const book = {
-        selectors: { org: 'unfoldingWord', lang: 'en', abbr: 'ult' },
-        bookCode: currentBook.bookId?.toLowerCase(),
-        data: fileData,
-      };
-      // setUsfmData(books);
-      const usfmContent = book.data;
-      // const pk = new Proskomma();
-      // const selectors = {
-      //   lang: 'xxx',
-      //   abbr: 'yyy',
-      // }
-      // pk.importDocuments(selectors, 'usfm', [usfmContent]);
-      // const perfResultDocument = pk.gqlQuerySync('{documents {perf} }').data.documents[0];
-      // const perf = JSON.parse(perfResultDocument.perf);
-      // if (perf && spec.checks && spec.checks.length > 0) {
-        //   let ret = checker({ content: { perf }, spec, contentType: "perf" });
-        //   setContentChecks(ret);
-        // }
-        // recipe[0].enabled = true; // Enable short/long verses check
-      const recipe = getAvailableChecks();
-      recipe[1].enabled = true; // Enable chapter/verse integrity check
-      console.log("recipe ==",recipe);
-      const { usj, error } = await convertUsfmToUsj(usfmContent);
-      if (error) {
-        console.error('Error parsing USFM:', error);
-        return { error, usj: null }; // Return consistent error object
+      // const fileData = await readFile({ projectname: projectName, filename: currentBook.fileName, username: userName });
+      // const book = {
+      //   selectors: { org: 'unfoldingWord', lang: 'en', abbr: 'ult' },
+      //   bookCode: currentBook.bookId?.toLowerCase(),
+      //   data: fileData,
+      // };
+
+      let response = null;
+      const USJ = localStorage.getItem('usj');
+      // console.log("SOURCE ==",JSON.parse(referenceSourceData));
+      // console.log("TARGET ==",JSON.parse(USJ));
+    
+      if(referenceSourceData) {
+        response = await checks(referenceSourceData, USJ, recipe);
+      } else {
+        response = await checks(USJ, USJ, recipe);
       }
-      const usjStr = JSON.stringify(usj);
-      const response = await checks(usjStr, usjStr, recipe);
-      setContentChecks(response.checks);
-      console.log("response ==",response.checks);
+      if(response) {
+        setContentChecks(response.checks);
+        console.log("response ==",response.checks);
+      }
     }
   }
 
@@ -508,10 +500,16 @@ export default function EditorSection({
           <>
             <CheckSelector
               showResourcesPanel={showResourcesPanelFromChecks}
+              recipe={recipe}
+              setRecipe={setRecipe}
+              referenceResources={referenceSourceLang}
+              setReferenceSourceData={setReferenceSourceData}
+              bookId={bookId}
             />
             <ChecksContent
               content={contentChecks}
               updateContent={doChecks}
+              onReferenceClick={onReferenceClick}
             />
           </>
         )}

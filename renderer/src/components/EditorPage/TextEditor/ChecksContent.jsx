@@ -3,10 +3,10 @@ import React, { useEffect, useState } from 'react';
 import { XMarkIcon } from '@heroicons/react/24/solid';
 import { SnackBar } from '@/components/SnackBar';
 import { Disclosure } from '@headlessui/react';
-import { ChevronUpIcon, ArrowPathIcon } from '@heroicons/react/20/solid';
+import { ChevronUpIcon, ArrowPathIcon, ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import LoadingScreen from '@/components/Loading/LoadingScreen';
 
-export default function ChecksContent({ content, updateContent }) {
+export default function ChecksContent({ content, updateContent, onReferenceClick }) {
 	const [openSnackBar, setOpenSnackBar] = useState(false);
 	const [snackText, setSnackText] = useState('');
 	const [groupedData, setGroupedData] = useState({});
@@ -14,18 +14,16 @@ export default function ChecksContent({ content, updateContent }) {
 	const [isRefreshing, setIsRefreshing] = useState(false);
 
 	useEffect(() => {
-		console.log("yoooooooooooooo bro content ==", content);
 		if (Array.isArray(content)) {
 			// Group the checks by their names
 			const grouped = content.reduce((acc, check) => {
-				if (!acc[check.name]) {
-					acc[check.name] = [];
+				if (!acc[check.readName]) {
+					acc[check.readName] = [];
 				}
-				acc[check.name].push(check);
+				acc[check.readName].push(check);
 				return acc;
 			}, {});
-			console.log('grouped ==', grouped),
-				setGroupedData(grouped);
+			setGroupedData(grouped);
 		}
 	}, [content]);
 
@@ -41,7 +39,7 @@ export default function ChecksContent({ content, updateContent }) {
 
 	return (
 		<div className='w-full max-w-4xl mx-auto'>
-			<div className='bg-primary flex justify-between items-center p-4 rounded-lg'>
+			<div className='bg-primary flex justify-between items-center p-4 rounded-lg sticky top-0 z-10'>
 				<h2 className='text-white font-bold text-lg'>Checks</h2>
 				<button
 					className={`top-4 right-4 text-white p-2 rounded-full bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -57,30 +55,48 @@ export default function ChecksContent({ content, updateContent }) {
 						<Disclosure key={checkName}>
 							{({ open }) => (
 								<>
-									<Disclosure.Button className='flex justify-between w-full px-4 py-2 text-sm font-medium text-left text-gray-700 bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none focus-visible:ring focus-visible:ring-purple-500 focus-visible:ring-opacity-75'>
+									<Disclosure.Button className='flex justify-between w-full px-4 py-3 text-sm font-medium text-left text-gray-700 bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-blue-500 focus-visible:ring-opacity-75'>
 										<span>{checkName}</span>
 										<ChevronUpIcon
 											className={`${open ? '' : 'transform rotate-180'} w-5 h-5 text-gray-500`}
 										/>
 									</Disclosure.Button>
 									<Disclosure.Panel className='px-4 pt-4 pb-2 text-sm text-gray-700'>
-										<ul className='space-y-2'>
+										<div className='space-y-4'>
 											{groupedData[checkName].map((check, checkIndex) => (
-												<li key={`${checkName}-${checkIndex}`} className='border p-2 rounded bg-white shadow-sm'>
-													<h3 className='font-semibold text-gray-800'>{check.description}</h3>
-													<ul className='mt-2 space-y-1'>
+												<div
+													key={`${checkName}-${checkIndex}`}
+													className='border p-4 rounded-lg bg-white shadow-sm hover:shadow-md transition-shadow duration-200'
+												>
+													<h3 className='font-semibold text-gray-800 mb-2'>
+														<ExclamationCircleIcon className="h-5 w-5 text-red-500 inline-block mr-2" />
+														{check.description}
+													</h3>
+													<div className='grid grid-cols-1 gap-3'>
 														{check.issues.map((issue, issueIndex) => (
-															<li key={issueIndex} className='text-sm'>
-																<span className='font-bold'>Type:</span> {issue.type}<br />
-																<span className='font-bold'>Chapter:</span> {issue.chapter}<br />
-																<span className='font-bold'>Verse:</span> {issue.verse}<br />
-																<span className='font-bold'>Message:</span> {issue.message}
-															</li>
+															<div
+																key={issueIndex}
+																className='bg-gray-50 border border-gray-300 p-3 rounded flex flex-col gap-2'
+															>
+																<div className="text-gray-800">
+																	<span className='font-bold'>Type:</span> {issue.comment}{' '}{issue.difference ? `(${issue.difference})` : ''}
+																</div>
+																<div className="text-gray-800">
+																	<span className='font-bold'>Reference:</span>{' '}
+																	<button
+																		onClick={() => onReferenceClick(issue.source_verse, issue.chapter, issue.verse)}
+																		className="text-blue-500 hover:underline"
+																	>
+																		{issue.source_verse ?? (issue.chapter ? `${issue.chapter}:${issue.verse}` : `${issue.verse}`)}
+																	</button>
+																</div>
+															</div>
 														))}
-													</ul>
-												</li>
+
+													</div>
+												</div>
 											))}
-										</ul>
+										</div>
 									</Disclosure.Panel>
 								</>
 							)}
