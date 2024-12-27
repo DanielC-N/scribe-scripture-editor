@@ -84,7 +84,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 																<div className="text-gray-800">
 																	<span className='font-bold'>Reference:</span>{' '}
 																	<button
-																		onClick={() => onReferenceClick(issue.source_verse, issue.chapter, issue.verse, issue.difference)}
+																		onClick={() => onReferenceClick(issue.source_verse, issue.chapter, issue.verse, issue.comment)}
 																		className="text-blue-500 hover:underline"
 																	>
 																		{issue.source_verse ?? (issue.chapter ? `${issue.chapter}:${issue.verse}` : `${issue.verse}`)}

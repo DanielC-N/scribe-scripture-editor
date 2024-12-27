@@ -227,8 +227,10 @@ export default function EditorSection({
    *
    * @param {string} chapter - The chapter number to locate.
    * @param {string} verse - The verse number to locate.
+   * @param {string} matchText - Text to match and highlight (optional).
+   * @param {boolean} missing - Whether the verse is missing (optional).
    */
-  function scrollToChapterVerse(chapter, verse, matchText='saul') {
+  function scrollToChapterVerse(chapter, verse, matchText = '', missing = false) {
     // Find the chapter element
     const chapterElement = document.querySelector(`.chapter[data-number="${chapter}"]`);
     if (!chapterElement) {
@@ -261,44 +263,37 @@ export default function EditorSection({
       return;
     }
 
-    let verseContentElement = verseElement.nextElementSibling;
-    while (verseContentElement) {
-        if (verseContentElement.hasAttribute('data-lexical-text') && verseContentElement.getAttribute('data-lexical-text') === 'true') {
-            break;
-        }
-        verseContentElement = verseContentElement.nextElementSibling;
+    // Collect all elements after the verse number until the next verse
+    const elementsToHighlight = [];
+    let sibling = verseElement.nextElementSibling;
+    while (sibling) {
+      if (sibling.matches('.verse')) break; // Stop at the next verse marker
+      if (sibling.hasAttribute('data-lexical-text') && sibling.getAttribute('data-lexical-text') === 'true') {
+        elementsToHighlight.push(sibling);
+      }
+      sibling = sibling.nextElementSibling;
     }
 
-    // Scroll the verse content into view
-    verseContentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Scroll the first element into view
+    if (elementsToHighlight.length > 0) {
+      elementsToHighlight[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
 
-    // Highlight the verse content
-    verseContentElement.style.backgroundColor = 'orange';
-    verseContentElement.style.transition = 'background-color 0.3s ease';
+    // Highlight all elements
+    elementsToHighlight.forEach((element) => {
+      element.style.backgroundColor = 'orange';
+      element.style.transition = 'background-color 0.3s ease';
+    });
 
-    // if (matchText !== '') {
-    //   // Highlight only the matching text
-    //   const textContent = verseContentElement.textContent;
-    //   const regex = new RegExp(`(${matchText})`, 'gi'); // Case-insensitive matching
-    //   const highlightedHTML = textContent.replace(regex, `<span class="highlight">${matchText}</span>`);
-    //   verseContentElement.innerHTML = highlightedHTML;
-
-    //   // Remove the highlight for matched text after 3 seconds
-    //   setTimeout(() => {
-    //       verseContentElement.innerHTML = textContent; // Restore the original content
-    //   }, 3000);
-    // } else {
-      // verseContentElement.classList.add('highlight-verse');
-      // setTimeout(() => verseContentElement.classList.remove('highlight-verse'), 2000);
-    //     // Highlight the entire verse
-    //   }
-    // Remove highlight after a delay
+    // Remove highlight after 2 seconds
     setTimeout(() => {
-      verseContentElement.style.backgroundColor = 'transparent';
+      elementsToHighlight.forEach((element) => {
+        element.style.backgroundColor = 'transparent';
+      });
     }, 2000);
   }
 
-  const onReferenceClick = (source_ref, source_chapter, source_verse) => {
+  const onReferenceClick = (source_ref, source_chapter, source_verse, text = '') => {
     let ref = null;
     if (source_ref) {
       ref = source_ref;
@@ -309,6 +304,13 @@ export default function EditorSection({
     if (!source_chapter && source_verse) {
       ref = source_verse;
     }
+
+    // let repeated = text.includes('repeated words');
+
+    // if(repeated) {
+    //   let repeatedWords = text.split(':')[1].split(',').map((w) => w.trim());
+    //   console.log("text", repeatedWords);
+    // }
 
     let clicked_chapter = ref.split(':')[0];
     let clicked_verse = ref.split(':')[1];
