@@ -240,18 +240,31 @@ export default function EditorSection({
 
     let currentElement = chapterElement.nextElementSibling;
     let verseElement = null;
+    let lastVerseElement = null;
+    let lastChapterElement = null;
+
 
     while (currentElement) {
       // If the element itself matches the verse, select it
+      if (currentElement.matches(`.chapter[data-number="${parseInt(chapter) + 1}"]`)) {
+        lastChapterElement = chapterElement;
+        break;
+      }
       if (currentElement.matches(`.verse[data-number="${verse}"]`)) {
         verseElement = currentElement;
         break;
       }
 
-      const nestedVerse = currentElement.querySelector(`.verse[data-number="${verse}"]`);
+      let nestedVerse = currentElement.querySelector(`.verse[data-number="${verse}"]`);
       if (nestedVerse) {
         verseElement = nestedVerse;
         break;
+      } else {
+        nestedVerse = currentElement.querySelector(`.verse[data-number="${verse - 1}"]`);
+        if (nestedVerse) {
+          lastVerseElement = nestedVerse;
+          break;
+        }
       }
 
       // Move to the next sibling
@@ -260,6 +273,18 @@ export default function EditorSection({
 
     if (!verseElement) {
       console.error(`Verse ${verse} in chapter ${chapter} not found.`);
+      if (!lastVerseElement && !lastChapterElement) {
+        return;
+      } else {
+        verseElement = lastVerseElement;
+      }
+    }
+
+    if (lastChapterElement) {
+      console.warn(`Verse ${verse} in chapter ${chapter} not found. Scrolling to the chapter instead.`);
+      chapterElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      chapterElement.classList.add('highlight-chapter');
+      setTimeout(() => chapterElement.classList.remove('highlight-chapter'), 5000);
       return;
     }
 
@@ -285,12 +310,12 @@ export default function EditorSection({
       element.style.transition = 'background-color 0.3s ease';
     });
 
-    // Remove highlight after 2 seconds
+    // Remove highlight after 5 seconds
     setTimeout(() => {
       elementsToHighlight.forEach((element) => {
         element.style.backgroundColor = 'transparent';
       });
-    }, 2000);
+    }, 5000);
   }
 
   const onReferenceClick = (source_ref, source_chapter, source_verse, text = '') => {
@@ -618,6 +643,7 @@ export default function EditorSection({
               content={contentChecks}
               updateContent={doChecks}
               onReferenceClick={onReferenceClick}
+              recipe={recipe}
             />
           </>
         )}

@@ -41,6 +41,7 @@ export default function LexicalEditor({
     const timeoutId = setTimeout(() => {
       if (usj && editorRef.current) {
         editorRef.current.setUsj(usj);
+        localStorage.setItem('usj', JSON.stringify(usj));
       }
     }, 1000);
     return () => clearTimeout(timeoutId);

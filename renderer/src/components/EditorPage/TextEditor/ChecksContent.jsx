@@ -6,14 +6,19 @@ import { Disclosure } from '@headlessui/react';
 import { ChevronUpIcon, ArrowPathIcon, ExclamationCircleIcon } from '@heroicons/react/20/solid';
 import LoadingScreen from '@/components/Loading/LoadingScreen';
 
-export default function ChecksContent({ content, updateContent, onReferenceClick }) {
+export default function ChecksContent({ content, updateContent, onReferenceClick, recipe }) {
 	const [openSnackBar, setOpenSnackBar] = useState(false);
 	const [snackText, setSnackText] = useState('');
 	const [groupedData, setGroupedData] = useState({});
 	const [error, setError] = useState('');
 	const [isRefreshing, setIsRefreshing] = useState(false);
+	const [areAnyCheckSelected, setAreAnyCheckSelected] = useState(false);
 
 	useEffect(() => {
+		// console.log(recipe);
+		recipe.map((el) => {
+			if (el.enabled) setAreAnyCheckSelected(true);
+		});
 		if (Array.isArray(content)) {
 			// Group the checks by their names
 			const grouped = content.reduce((acc, check) => {
@@ -103,7 +108,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 						</Disclosure>
 					))
 				) : !isRefreshing && (
-					<p className='text-center text-gray-500'>No content available.</p>
+					<p className='text-center text-gray-500'>{areAnyCheckSelected ? 'No results.' : 'Please check at least one check from the check dropdown.'}</p>
 				)}
 			</div>
 			<SnackBar

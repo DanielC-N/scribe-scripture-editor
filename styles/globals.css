@@ -3622,3 +3622,9 @@ span.read img {
 	border-radius: 3px;
 	padding: 0 2px;
 }
+
+.highlight-chapter {
+	background-color: lightblue;
+	border-radius: 4px;
+	transition: background-color 0.3s ease;
+}

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import packageInfo from '../../../../package.json';
 import AdjustmentsVerticalIcon from '@/icons/Common/AdjustmentsVertical.svg';
 import { Menu, Transition } from '@headlessui/react';
@@ -20,6 +20,8 @@ const CheckSelector = ({
   openResourcePopUp
 }) => {
 
+  const [theProjectName, setTheProjectName] = useState(false);
+
   useEffect(() => {
     console.log("Calling useEffect!")
     let dataSrcBook = null;
@@ -33,6 +35,7 @@ const CheckSelector = ({
       const currentUser = user?.username;
       const folder = path.join(newpath, packageInfo.name, 'users', `${currentUser}`, 'resources');
       const projectName = `${referenceResources.refName}`;
+      setTheProjectName(projectName);
       const normalizedPath = path.join(folder, projectName);
       const metaPath = path.join(normalizedPath, 'metadata.json');
 
@@ -155,6 +158,7 @@ const CheckSelector = ({
           </Menu.Items>
         </Transition>
       </Menu>
+      <span> {theProjectName ? `Resource selected : ${theProjectName}` : 'no resource selected'}</span>
     </div>
   );
 };
