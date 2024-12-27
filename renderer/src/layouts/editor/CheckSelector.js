@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from "react";
+import React, { useContext, useEffect } from "react";
 import packageInfo from '../../../../package.json';
 import AdjustmentsVerticalIcon from '@/icons/Common/AdjustmentsVertical.svg';
 import { Menu, Transition } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/20/solid';
 import { Fragment } from 'react';
 import { readRefBurrito } from '@/core/reference/readRefBurrito';
+import { ReferenceContext } from '@/components/context/ReferenceContext';
 import localForage from 'localforage';
 import * as logger from '../../logger';
 import { convertUsfmToUsj } from '@/components/EditorPage/TextEditor/conversionUtils.js';
@@ -15,9 +16,12 @@ const CheckSelector = ({
   setRecipe,
   bookId,
   referenceResources,
-  setReferenceSourceData
+  setReferenceSourceData,
+  openResourcePopUp
 }) => {
+
   useEffect(() => {
+    console.log("Calling useEffect!")
     let dataSrcBook = null;
 
     localForage.getItem('userProfile').then(async (user) => {
@@ -52,15 +56,22 @@ const CheckSelector = ({
       }
 
       let trg_usfm_bookId = localStorage.getItem('trg_usfm_bookId');
-      if (!trg_usfm_bookId || (dataSrcBook && trg_usfm_bookId.toUpperCase() !== currentBook.bookId)) {
+      let refName = localStorage.getItem('ref_name');
+      if(!refName) {
+        localStorage.setItem('ref_name', projectName);
+        refName = projectName;
+      }
+      
+      if (projectName != refName || !trg_usfm_bookId || (dataSrcBook && trg_usfm_bookId.toUpperCase() !== currentBook.bookId)) {
         let usfmToUsj = await convertUsfmToUsj(dataSrcBook);
         let strUsj = JSON.stringify(usfmToUsj.usj);
-        localStorage.setItem('trg_usfm', strUsj);
-        localStorage.setItem('trg_usfm_bookId', strUsj);
+        localStorage.setItem('trg_usj', strUsj);
+        localStorage.setItem('trg_usfm_bookId', usfmToUsj.usj?.content[0]?.code);
+        localStorage.setItem('ref_name', projectName);
         setReferenceSourceData(strUsj);
       }
     }).catch((e) => console.log("Error while loading source file", e));
-  }, [bookId]);
+  }, [bookId, openResourcePopUp, referenceResources.refName]);
 
   const writeJSONToFile = (updatedRecipe) => {
     const fs = window.require('fs');

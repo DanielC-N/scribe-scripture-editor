@@ -3605,3 +3605,20 @@ span.read img {
 	background-repeat: no-repeat;
 	background-position: center;
 }
+
+/* Highlight for entire verse */
+.highlight-verse {
+	background-color: yellow;
+	border-radius: 4px;
+	transition: background-color 0.3s ease;
+	padding: 5px;
+}
+
+/* Highlight for specific matching text */
+.highlight {
+	background-color: orange;
+	color: black;
+	font-weight: bold;
+	border-radius: 3px;
+	padding: 0 2px;
+}

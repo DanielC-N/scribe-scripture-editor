@@ -68,12 +68,19 @@ export default function EditorSection({
     state: {
       layout,
       bookId,
+      bookList,
+      chapter,
       openResource1,
       openResource2,
       openResource3,
       openResource4,
     },
-    actions: { setLayout },
+    actions: {
+      setLayout,
+      onChangeChapter,
+      onChangeVerse,
+      setIsLoading,
+    },
   } = useContext(ReferenceContext);
   // const {
   //   state: {
@@ -96,6 +103,7 @@ export default function EditorSection({
   // } = useContext(ReferenceContext);
   const {
     states: { scrollLock, selectedProjectMeta },
+    actions: { setOpenSideBar },
   } = useContext(ProjectContext);
 
   function removeResource() {
@@ -105,20 +113,20 @@ export default function EditorSection({
   const removeSection = () => {
     setRemovingSection(row);
     switch (row) {
-    case '1':
-      setOpenResource1(true);
-      break;
-    case '2':
-      setOpenResource2(true);
-      break;
-    case '3':
-      setOpenResource3(true);
-      break;
-    case '4':
-      setOpenResource4(true);
-      break;
-    default:
-      break;
+      case '1':
+        setOpenResource1(true);
+        break;
+      case '2':
+        setOpenResource2(true);
+        break;
+      case '3':
+        setOpenResource3(true);
+        break;
+      case '4':
+        setOpenResource4(true);
+        break;
+      default:
+        break;
     }
     if (sectionNum > 0) {
       setSectionNum(sectionNum - 1);
@@ -195,24 +203,121 @@ export default function EditorSection({
     }
     setAddingSection(row);
     switch (row) {
-    case '1':
-      setOpenResource2(false);
-      break;
-    case '2':
-      setOpenResource1(false);
-      break;
-    case '3':
-      setOpenResource4(false);
-      break;
-    case '4':
-      setOpenResource3(false);
-      break;
-    default:
-      break;
+      case '1':
+        setOpenResource2(false);
+        break;
+      case '2':
+        setOpenResource1(false);
+        break;
+      case '3':
+        setOpenResource4(false);
+        break;
+      case '4':
+        setOpenResource3(false);
+        break;
+      default:
+        break;
     }
   };
 
-  const onReferenceClick = () => {}
+
+  /**
+   * Scrolls to the specified chapter and verse in the document.
+   * Highlights the verse content for clarity.
+   *
+   * @param {string} chapter - The chapter number to locate.
+   * @param {string} verse - The verse number to locate.
+   */
+  function scrollToChapterVerse(chapter, verse, matchText='saul') {
+    // Find the chapter element
+    const chapterElement = document.querySelector(`.chapter[data-number="${chapter}"]`);
+    if (!chapterElement) {
+      console.error(`Chapter ${chapter} not found.`);
+      return;
+    }
+
+    let currentElement = chapterElement.nextElementSibling;
+    let verseElement = null;
+
+    while (currentElement) {
+      // If the element itself matches the verse, select it
+      if (currentElement.matches(`.verse[data-number="${verse}"]`)) {
+        verseElement = currentElement;
+        break;
+      }
+
+      const nestedVerse = currentElement.querySelector(`.verse[data-number="${verse}"]`);
+      if (nestedVerse) {
+        verseElement = nestedVerse;
+        break;
+      }
+
+      // Move to the next sibling
+      currentElement = currentElement.nextElementSibling;
+    }
+
+    if (!verseElement) {
+      console.error(`Verse ${verse} in chapter ${chapter} not found.`);
+      return;
+    }
+
+    let verseContentElement = verseElement.nextElementSibling;
+    while (verseContentElement) {
+        if (verseContentElement.hasAttribute('data-lexical-text') && verseContentElement.getAttribute('data-lexical-text') === 'true') {
+            break;
+        }
+        verseContentElement = verseContentElement.nextElementSibling;
+    }
+
+    // Scroll the verse content into view
+    verseContentElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // Highlight the verse content
+    verseContentElement.style.backgroundColor = 'orange';
+    verseContentElement.style.transition = 'background-color 0.3s ease';
+
+    // if (matchText !== '') {
+    //   // Highlight only the matching text
+    //   const textContent = verseContentElement.textContent;
+    //   const regex = new RegExp(`(${matchText})`, 'gi'); // Case-insensitive matching
+    //   const highlightedHTML = textContent.replace(regex, `<span class="highlight">${matchText}</span>`);
+    //   verseContentElement.innerHTML = highlightedHTML;
+
+    //   // Remove the highlight for matched text after 3 seconds
+    //   setTimeout(() => {
+    //       verseContentElement.innerHTML = textContent; // Restore the original content
+    //   }, 3000);
+    // } else {
+      // verseContentElement.classList.add('highlight-verse');
+      // setTimeout(() => verseContentElement.classList.remove('highlight-verse'), 2000);
+    //     // Highlight the entire verse
+    //   }
+    // Remove highlight after a delay
+    setTimeout(() => {
+      verseContentElement.style.backgroundColor = 'transparent';
+    }, 2000);
+  }
+
+  const onReferenceClick = (source_ref, source_chapter, source_verse) => {
+    let ref = null;
+    if (source_ref) {
+      ref = source_ref;
+    }
+    if (source_chapter && source_verse) {
+      ref = `${source_chapter}:${source_verse}`;
+    }
+    if (!source_chapter && source_verse) {
+      ref = source_verse;
+    }
+
+    let clicked_chapter = ref.split(':')[0];
+    let clicked_verse = ref.split(':')[1];
+    if (chapter !== clicked_chapter) {
+      onChangeChapter(clicked_chapter);
+    }
+    onChangeVerse(clicked_verse);
+    scrollToChapterVerse(clicked_chapter, clicked_verse);
+  }
 
   const doChecks = async () => {
     const fse = window.require('fs-extra');
@@ -257,15 +362,15 @@ export default function EditorSection({
       const USJ = localStorage.getItem('usj');
       // console.log("SOURCE ==",JSON.parse(referenceSourceData));
       // console.log("TARGET ==",JSON.parse(USJ));
-    
-      if(referenceSourceData) {
+
+      if (referenceSourceData) {
         response = await checks(referenceSourceData, USJ, recipe);
       } else {
         response = await checks(USJ, USJ, recipe);
       }
-      if(response) {
+      if (response) {
         setContentChecks(response.checks);
-        console.log("response ==",response.checks);
+        console.log("response ==", response.checks);
       }
     }
   }
@@ -317,59 +422,59 @@ export default function EditorSection({
             <div className="flex">
               {selectedResource === 'ta'
                 || selectedResource === 'tw' ? (
-                  <div className="h-12 flex">
-                    {selectedResource === 'ta' ? (
-                      <TaNavigation
-                        languageId={languageId}
-                        referenceResources={
-                          referenceResources
-                        }
-                      />
-                    ) : (
-                      <TwNavigation
-                        languageId={languageId}
-                        referenceResources={
-                          referenceResources
-                        }
-                        setReferenceResources={
-                          setReferenceResources
-                        }
-                      />
-                    )}
+                <div className="h-12 flex">
+                  {selectedResource === 'ta' ? (
+                    <TaNavigation
+                      languageId={languageId}
+                      referenceResources={
+                        referenceResources
+                      }
+                    />
+                  ) : (
+                    <TwNavigation
+                      languageId={languageId}
+                      referenceResources={
+                        referenceResources
+                      }
+                      setReferenceResources={
+                        setReferenceResources
+                      }
+                    />
+                  )}
 
-                    <div
-                      className="relative lg:left-72 sm:left-48 sm:ml-2.5 top-4 text-xxs uppercase tracking-wider font-bold leading-3 truncate"
-                      title={title}
-                    >
-                      {title}
-                    </div>
+                  <div
+                    className="relative lg:left-72 sm:left-48 sm:ml-2.5 top-4 text-xxs uppercase tracking-wider font-bold leading-3 truncate"
+                    title={title}
+                  >
+                    {title}
                   </div>
-                ) : (
-                  <>
-                    {scrollLock && title ? (
-                      <>
-                        {CustomNavigation}
+                </div>
+              ) : (
+                <>
+                  {scrollLock && title ? (
+                    <>
+                      {CustomNavigation}
+                      <div
+                        title={title}
+                        className="ml-4 flex justify-center items-center text-xxs uppercase tracking-wider font-bold leading-3 truncate"
+                      >
+                        {title}
+                      </div>
+                    </>
+                  ) : (
+                    <div className="flex">
+                      <div className="py-2 uppercase tracking-wider text-xs font-semibold">
                         <div
                           title={title}
-                          className="ml-4 flex justify-center items-center text-xxs uppercase tracking-wider font-bold leading-3 truncate"
+                          className="ml-4 h-4 flex justify-center items-center text-xxs uppercase tracking-wider font-bold leading-3 truncate"
                         >
                           {title}
                         </div>
-                      </>
-                    ) : (
-                      <div className="flex">
-                        <div className="py-2 uppercase tracking-wider text-xs font-semibold">
-                          <div
-                            title={title}
-                            className="ml-4 h-4 flex justify-center items-center text-xxs uppercase tracking-wider font-bold leading-3 truncate"
-                          >
-                            {title}
-                          </div>
-                        </div>
                       </div>
-                    )}
-                  </>
-                )}
+                    </div>
+                  )}
+                </>
+              )}
               <div className="flex bg-gray-300 absolute h-full -right-0 rounded-tr  group-hover:visible  pl-2 items-center">
 
                 <button
@@ -459,28 +564,28 @@ export default function EditorSection({
               </button>
             </div>
             {selectedProjectMeta?.type?.flavorType?.flavor?.name == 'textTranslation' &&
-            (<div className="text-center">
-              <div className="p-5 text-xs uppercase pb-4">
-                {"Open checks"}
-              </div>
-              <button
-                type="button"
-                className="p-4 bg-gray-200 rounded-lg ring-offset-1"
-                onClick={() => {
-                  let copyRefResources = referenceResources;
-                  referenceResources.selectedResource = 'checks';
-                  setLoadResource(true);
-                  setReferenceResources(referenceResources);
-                  doChecks();
-                }}
-              >
-                <Cog8ToothIcon
-                  aria-label="close-lock"
-                  className="h-5 w-5"
-                  aria-hidden="true"
-                />
-              </button>
-            </div>)}
+              (<div className="text-center">
+                <div className="p-5 text-xs uppercase pb-4">
+                  {"Open checks"}
+                </div>
+                <button
+                  type="button"
+                  className="p-4 bg-gray-200 rounded-lg ring-offset-1"
+                  onClick={() => {
+                    let copyRefResources = referenceResources;
+                    referenceResources.selectedResource = 'checks';
+                    setLoadResource(true);
+                    setReferenceResources(referenceResources);
+                    doChecks();
+                  }}
+                >
+                  <Cog8ToothIcon
+                    aria-label="close-lock"
+                    className="h-5 w-5"
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>)}
           </div>
         ) : referenceResources.selectedResource !== 'checks' ? (
           <div
@@ -490,7 +595,7 @@ export default function EditorSection({
               direction: `${projectScriptureDir?.toUpperCase() === 'RTL'
                 ? 'rtl'
                 : 'ltr'
-              }`,
+                }`,
             }}
             className="prose-sm p-1 text-xl h-full overflow-auto scrollbars-width"
           >
@@ -504,6 +609,7 @@ export default function EditorSection({
               setRecipe={setRecipe}
               referenceResources={referenceSourceLang}
               setReferenceSourceData={setReferenceSourceData}
+              openResourcePopUp={openResourcePopUp}
               bookId={bookId}
             />
             <ChecksContent
@@ -515,7 +621,7 @@ export default function EditorSection({
         )}
 
         {/* //div 12 */}
-        { openResourcePopUp && (
+        {openResourcePopUp && (
           <div className="fixed z-50 ">
             <ResourcesPopUp
               column={row}
