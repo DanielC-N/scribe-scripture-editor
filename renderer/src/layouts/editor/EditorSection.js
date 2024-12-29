@@ -242,6 +242,7 @@ export default function EditorSection({
     let verseElement = null;
     let lastVerseElement = null;
     let lastChapterElement = null;
+    let nestedVerse = null;
 
 
     while (currentElement) {
@@ -255,16 +256,16 @@ export default function EditorSection({
         break;
       }
 
-      let nestedVerse = currentElement.querySelector(`.verse[data-number="${verse}"]`);
+      nestedVerse = currentElement.querySelector(`.verse[data-number="${verse}"]`);
       if (nestedVerse) {
         verseElement = nestedVerse;
         break;
-      } else {
-        nestedVerse = currentElement.querySelector(`.verse[data-number="${verse - 1}"]`);
-        if (nestedVerse) {
-          lastVerseElement = nestedVerse;
-          break;
-        }
+        // } else {
+        //   nestedVerse = currentElement.querySelector(`.verse[data-number="${verse - 1}"]`);
+        //   if (nestedVerse) {
+        //     lastVerseElement = nestedVerse;
+        //     break;
+        //   }
       }
 
       // Move to the next sibling
@@ -290,13 +291,28 @@ export default function EditorSection({
 
     // Collect all elements after the verse number until the next verse
     const elementsToHighlight = [];
-    let sibling = verseElement.nextElementSibling;
-    while (sibling) {
-      if (sibling.matches('.verse')) break; // Stop at the next verse marker
-      if (sibling.hasAttribute('data-lexical-text') && sibling.getAttribute('data-lexical-text') === 'true') {
-        elementsToHighlight.push(sibling);
+    // let sibling = verseElement.nextElementSibling;
+    let isNextVerse = false;
+    let isCorrectVerse = false;
+    while (!isNextVerse) {
+      let children = currentElement.childNodes;
+      for (const child of children) {
+        if (child.matches(`.verse[data-number="${verse}"]`)) {
+          isCorrectVerse = true;
+          continue;
+        }
+
+        // Stop at the next verse marker
+        if (isCorrectVerse && (child.matches(`.verse`) || child.matches(`.chapter`))) {
+          isNextVerse = true;
+          break;
+        }
+
+        if (isCorrectVerse && child.hasAttribute('data-lexical-text') && child.getAttribute('data-lexical-text') === 'true') {
+          elementsToHighlight.push(child);
+        }
       }
-      sibling = sibling.nextElementSibling;
+      currentElement = currentElement.nextElementSibling;
     }
 
     // Scroll the first element into view
@@ -385,6 +401,7 @@ export default function EditorSection({
       //   data: fileData,
       // };
 
+
       let response = null;
       const USJ = localStorage.getItem('usj');
       // console.log("SOURCE ==",JSON.parse(referenceSourceData));
@@ -397,7 +414,7 @@ export default function EditorSection({
       }
       if (response) {
         setContentChecks(response.checks);
-        console.log("response ==", response.checks);
+        // console.log("response ==", response.checks);
       }
     }
   }

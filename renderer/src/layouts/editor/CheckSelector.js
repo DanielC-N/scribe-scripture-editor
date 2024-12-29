@@ -20,10 +20,10 @@ const CheckSelector = ({
   openResourcePopUp
 }) => {
 
-  const [theProjectName, setTheProjectName] = useState(false);
+  const [theProjectName, setTheProjectName] = useState('');
+  const [firstSelection, setFirstSelection] = useState(true);
 
   useEffect(() => {
-    console.log("Calling useEffect!")
     let dataSrcBook = null;
 
     localForage.getItem('userProfile').then(async (user) => {
@@ -65,15 +65,17 @@ const CheckSelector = ({
         refName = projectName;
       }
       
-      if (projectName != refName || !trg_usfm_bookId || (dataSrcBook && trg_usfm_bookId.toUpperCase() !== currentBook.bookId)) {
-        let usfmToUsj = await convertUsfmToUsj(dataSrcBook);
-        let strUsj = JSON.stringify(usfmToUsj.usj);
-        localStorage.setItem('trg_usj', strUsj);
-        localStorage.setItem('trg_usfm_bookId', usfmToUsj.usj?.content[0]?.code);
-        localStorage.setItem('ref_name', projectName);
-        setReferenceSourceData(strUsj);
+      if (firstSelection || projectName != refName || !trg_usfm_bookId || (dataSrcBook && trg_usfm_bookId.toUpperCase() !== currentBook.bookId)) {
+        convertUsfmToUsj(dataSrcBook).then((usfmToUsj) => {
+          let strUsj = JSON.stringify(usfmToUsj.usj);
+          localStorage.setItem('trg_usj', strUsj);
+          localStorage.setItem('trg_usfm_bookId', usfmToUsj.usj?.content[0]?.code);
+          localStorage.setItem('ref_name', projectName);
+          setReferenceSourceData(strUsj);
+        }).catch((e) => console.error("Error while loading source file", e));
+        setFirstSelection(false);
       }
-    }).catch((e) => console.log("Error while loading source file", e));
+    }).catch((e) => console.error("Error while loading source file", e));
   }, [bookId, openResourcePopUp, referenceResources.refName]);
 
   const writeJSONToFile = (updatedRecipe) => {
@@ -158,7 +160,7 @@ const CheckSelector = ({
           </Menu.Items>
         </Transition>
       </Menu>
-      <span> {theProjectName ? `Resource selected : ${theProjectName}` : 'no resource selected'}</span>
+      <span> {theProjectName != '' && theProjectName != 'undefined' ? `Resource selected : ${theProjectName}` : 'No resource selected'}</span>
     </div>
   );
 };

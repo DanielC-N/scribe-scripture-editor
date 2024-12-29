@@ -12,13 +12,9 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 	const [groupedData, setGroupedData] = useState({});
 	const [error, setError] = useState('');
 	const [isRefreshing, setIsRefreshing] = useState(false);
-	const [areAnyCheckSelected, setAreAnyCheckSelected] = useState(false);
+	const [areAnyCheckSelected, setAreAnyCheckSelected] = useState(recipe.some(el => el.enabled));
 
 	useEffect(() => {
-		// console.log(recipe);
-		recipe.map((el) => {
-			if (el.enabled) setAreAnyCheckSelected(true);
-		});
 		if (Array.isArray(content)) {
 			// Group the checks by their names
 			const grouped = content.reduce((acc, check) => {
@@ -34,6 +30,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 
 	const handleRefreshClick = () => {
 		setIsRefreshing(true);
+		setAreAnyCheckSelected(recipe.some(el => el.enabled));
 		updateContent();
 
 		// Add delay to simulate refreshing and stop the rotation animation after 1 second
@@ -43,7 +40,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 	};
 
 	return (
-		<div className='w-full max-w-4xl mx-auto'>
+		<div className="w-full max-w-4xl mx-auto h-[75vh]">
 			<div className='bg-primary flex justify-between items-center p-4 rounded-lg sticky top-0 z-10'>
 				<h2 className='text-white font-bold text-lg'>Checks</h2>
 				<button
@@ -53,7 +50,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 					<ArrowPathIcon className="w-6 h-6" />
 				</button>
 			</div>
-			<div className='bg-gray-50 p-6 rounded-lg max-h-[75vh] overflow-y-auto'>
+			<div className="bg-gray-50 p-6 rounded-lg max-h-[65vh] overflow-y-auto">
 				{(isRefreshing && (!groupedData || Object.keys(groupedData).length < 1)) && <LoadingScreen />}
 				{!isRefreshing && groupedData && Object.keys(groupedData).length > 0 ? (
 					Object.keys(groupedData).map((checkName) => (
@@ -108,7 +105,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 						</Disclosure>
 					))
 				) : !isRefreshing && (
-					<p className='text-center text-gray-500'>{areAnyCheckSelected ? 'No results.' : 'Please check at least one check from the check dropdown.'}</p>
+					<p className='text-center text-gray-500'>{areAnyCheckSelected ? 'No results.' : 'Please select at least one check from the check dropdown.'}</p>
 				)}
 			</div>
 			<SnackBar
