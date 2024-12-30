@@ -50,7 +50,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 					<ArrowPathIcon className="w-6 h-6" />
 				</button>
 			</div>
-			<div className="bg-gray-50 p-6 rounded-lg overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+			<div className="bg-gray-50 p-6 rounded-lg overflow-y-auto" style={{ maxHeight: 'calc(100vh - 350px)' }}>
 				{(isRefreshing && (!groupedData || Object.keys(groupedData).length < 1)) && <LoadingScreen />}
 				{!isRefreshing && groupedData && Object.keys(groupedData).length > 0 ? (
 					Object.keys(groupedData).map((checkName) => (
