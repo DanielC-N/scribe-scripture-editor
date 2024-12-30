@@ -78,7 +78,7 @@ export default function EditorSection({
       return `.para[data-marker="${marker}"]`;
     })
     .join(', ');
-  
+
   const {
     state: {
       layout,
@@ -235,6 +235,84 @@ export default function EditorSection({
     }
   };
 
+  /**
+   * Highlights the text of a specific verse in the document and scrolls to it.
+   * Highlights only the content of the verse, not the verse number.
+   * Removes the highlight after 5 seconds.
+   * 
+   * @param {number} chapter - The chapter number.
+   * @param {number} verse - The verse number.
+   */
+  function highlightVerse(chapter, verse) {
+    // Construct the ID of the target verse element
+    const verseId = `ch${chapter}v${verse}`;
+
+    // Find the verse number element by ID
+    const verseElement = document.getElementById(verseId);
+
+    if (verseElement) {
+      // Find the parent paragraph containing the verse text
+      const paragraph = verseElement.closest('p');
+
+      if (paragraph) {
+        // Get all text nodes in the paragraph following the verse number
+        const range = document.createRange();
+        const startNode = verseElement.nextSibling;
+        const endNode = findEndNode(paragraph, chapter, verse);
+
+        // Define the range for highlighting
+        if (startNode && endNode) {
+          range.setStartAfter(verseElement);
+          range.setEndBefore(endNode);
+
+          // Wrap the range in a highlight span
+          const highlightSpan = document.createElement('span');
+          highlightSpan.className = 'highlight';
+          range.surroundContents(highlightSpan);
+
+          // Scroll the highlighted text into view
+          // highlightSpan.scrollIntoView({
+          //   behavior: 'smooth',
+          //   block: 'center'
+          // });
+
+          // Remove the highlight after 5 seconds
+          setTimeout(() => {
+            highlightSpan.replaceWith(...highlightSpan.childNodes);
+          }, 5000);
+
+          return paragraph;
+        }
+      }
+    } else {
+      console.warn(`Verse with ID "${verseId}" not found.`);
+    }
+
+    return null;
+  }
+
+  /**
+  * Finds the end node of the text for the current verse by searching for the next verse or chapter marker.
+  * 
+  * @param {HTMLElement} paragraph - The paragraph containing the verse text.
+  * @param {number} chapter - The current chapter number.
+  * @param {number} verse - The current verse number.
+  * @returns {Node} The node where the current verse ends.
+  */
+  function findEndNode(paragraph, chapter, verse) {
+    const children = Array.from(paragraph.children);
+    let foundCurrent = false;
+
+    for (const child of children) {
+      if (child.id === `ch${chapter}v${verse}`) {
+        foundCurrent = true;
+      } else if (foundCurrent && (child.classList.contains('mark') || child.classList.contains('chapter'))) {
+        return child;
+      }
+    }
+
+    return paragraph.lastChild; // If no next marker is found, return the last node in the paragraph
+  }
 
   /**
    * Scrolls to the specified chapter and verse in the document.
@@ -301,10 +379,10 @@ export default function EditorSection({
 
     if (lastChapterElement) {
       console.warn(`Verse ${verse} in chapter ${chapter} not found. Scrolling to the chapter instead.`);
-      chapterElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // chapterElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
       chapterElement.classList.add('highlight-chapter');
       setTimeout(() => chapterElement.classList.remove('highlight-chapter'), 5000);
-      return;
+      return chapterElement;
     }
 
     // Collect all elements after the verse number until the next verse
@@ -337,11 +415,6 @@ export default function EditorSection({
       currentElement = currentElement.nextElementSibling;
     }
 
-    // Scroll the first element into view
-    if (elementsToHighlight.length > 0) {
-      elementsToHighlight[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-
     // Highlight all elements
     elementsToHighlight.forEach((element) => {
       element.style.backgroundColor = 'orange';
@@ -354,6 +427,13 @@ export default function EditorSection({
         element.style.backgroundColor = 'transparent';
       });
     }, 5000);
+
+    // Scroll the first element into view
+    if (elementsToHighlight.length > 0) {
+      // elementsToHighlight[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return elementsToHighlight[0];
+    }
+
   }
 
   const onReferenceClick = (source_ref, source_chapter, source_verse, text = '') => {
@@ -381,7 +461,16 @@ export default function EditorSection({
       onChangeChapter(clicked_chapter);
     }
     onChangeVerse(clicked_verse);
-    scrollToChapterVerse(clicked_chapter, clicked_verse);
+    const elementToScrollTo = [];
+
+    elementToScrollTo.push(highlightVerse(clicked_chapter, clicked_verse));
+    elementToScrollTo.push(scrollToChapterVerse(clicked_chapter, clicked_verse));
+
+    for(const elem of elementToScrollTo) {
+      if(elem) {
+        elem.scrollIntoView({ top: elem.offsetTop, behavior: "smooth", block: 'center' });
+      }
+    }
   }
 
   const doChecks = async () => {
