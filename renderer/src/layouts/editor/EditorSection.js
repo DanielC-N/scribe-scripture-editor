@@ -314,7 +314,6 @@ export default function EditorSection({
     let isCorrectVerse = false;
     while (!isNextVerse) {
       if (currentElement.matches(query)) {
-        console.log("yup")
         currentElement = currentElement.nextElementSibling;
         continue;
       }
