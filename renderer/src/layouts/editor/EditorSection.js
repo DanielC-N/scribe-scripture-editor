@@ -62,8 +62,23 @@ export default function EditorSection({
   const [choosingSourceLang, setChoosingSourceLang] = useState(false);
   const [referenceSourceLang, setReferenceSourceLang] = useState({});
   const [referenceSourceData, setReferenceSourceData] = useState(null);
+  // const [highlightedtext, setHighlightedtext] = useState(null);
   const [recipe, setRecipe] = useState(getAvailableChecks());
   const { t } = useTranslation();
+
+  const markers = [
+    's#', 'mt#', 'mte#', 'ms#', 'mr', 'sr', 'r', 'rq', 'rq*', 'd', 'sp', 'sd#'
+  ];
+
+  const query = markers
+    .map(marker => {
+      if (marker.endsWith('#')) {
+        return `.para[data-marker^="${marker.slice(0, -1)}"]`;
+      }
+      return `.para[data-marker="${marker}"]`;
+    })
+    .join(', ');
+  
   const {
     state: {
       layout,
@@ -244,8 +259,11 @@ export default function EditorSection({
     let lastChapterElement = null;
     let nestedVerse = null;
 
-
     while (currentElement) {
+      if (currentElement.matches(query)) {
+        currentElement = currentElement.nextElementSibling;
+        continue;
+      }
       // If the element itself matches the verse, select it
       if (currentElement.matches(`.chapter[data-number="${parseInt(chapter) + 1}"]`)) {
         lastChapterElement = chapterElement;
@@ -295,6 +313,11 @@ export default function EditorSection({
     let isNextVerse = false;
     let isCorrectVerse = false;
     while (!isNextVerse) {
+      if (currentElement.matches(query)) {
+        console.log("yup")
+        currentElement = currentElement.nextElementSibling;
+        continue;
+      }
       let children = currentElement.childNodes;
       for (const child of children) {
         if (child.matches(`.verse[data-number="${verse}"]`)) {

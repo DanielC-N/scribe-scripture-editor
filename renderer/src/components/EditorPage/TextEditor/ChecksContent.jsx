@@ -40,7 +40,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 	};
 
 	return (
-		<div className="w-full max-w-4xl mx-auto h-[75vh]">
+		<div className="w-full max-w-4xl mx-auto" style={{ height: '100vh' }}>
 			<div className='bg-primary flex justify-between items-center p-4 rounded-lg sticky top-0 z-10'>
 				<h2 className='text-white font-bold text-lg'>Checks</h2>
 				<button
@@ -50,14 +50,20 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 					<ArrowPathIcon className="w-6 h-6" />
 				</button>
 			</div>
-			<div className="bg-gray-50 p-6 rounded-lg max-h-[65vh] overflow-y-auto">
+			<div className="bg-gray-50 p-6 rounded-lg overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
 				{(isRefreshing && (!groupedData || Object.keys(groupedData).length < 1)) && <LoadingScreen />}
 				{!isRefreshing && groupedData && Object.keys(groupedData).length > 0 ? (
 					Object.keys(groupedData).map((checkName) => (
 						<Disclosure key={checkName}>
 							{({ open }) => (
 								<>
-									<Disclosure.Button className='flex justify-between w-full px-4 py-3 text-sm font-medium text-left text-gray-700 bg-gray-100 border border-gray-300 rounded-lg shadow-sm hover:bg-gray-200 focus:outline-none focus-visible:ring focus-visible:ring-blue-500 focus-visible:ring-opacity-75'>
+									<Disclosure.Button
+										className='flex justify-between w-full px-4 py-3 text-sm font-medium text-left bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none sticky top-0 z-10 shadow'
+										style={{
+											top: '-1.5rem',
+											backgroundColor: open ? '#f3f4f6' : '#e5e7eb',
+										}}
+									>
 										<span>{checkName}</span>
 										<ChevronUpIcon
 											className={`${open ? '' : 'transform rotate-180'} w-5 h-5 text-gray-500`}
