@@ -9,6 +9,7 @@ import { ReferenceContext } from '@/components/context/ReferenceContext';
 import localForage from 'localforage';
 import * as logger from '../../logger';
 import { convertUsfmToUsj } from '@/components/EditorPage/TextEditor/conversionUtils.js';
+// const { Worker } = require('worker_threads');
 
 const CheckSelector = ({
   showResourcesPanel,
@@ -22,6 +23,29 @@ const CheckSelector = ({
 
   const [theProjectName, setTheProjectName] = useState('');
   const [firstSelection, setFirstSelection] = useState(true);
+
+  // function runConversionInWebWorker(dataSrcBook, pathInstance) {
+  //   return new Promise((resolve, reject) => {
+
+  //     const workerPath = pathInstance.resolve(__dirname, 'usfmWorker.js');
+  //     console.log("workerPath",workerPath);
+  //     const workerUrl = `file://${workerPath}`;
+  //     const worker = new Worker(workerUrl);
+  //     worker.postMessage(dataSrcBook);
+  
+  //     worker.onmessage = (event) => {
+  //       if (event.data.success) {
+  //         resolve(event.data.result);
+  //       } else {
+  //         reject(new Error(event.data.error));
+  //       }
+  //     };
+  
+  //     worker.onerror = (error) => {
+  //       reject(error);
+  //     };
+  //   });
+  // }
 
   useEffect(() => {
     let dataSrcBook = null;
@@ -60,20 +84,25 @@ const CheckSelector = ({
 
       let trg_usfm_bookId = localStorage.getItem('trg_usfm_bookId');
       let refName = localStorage.getItem('ref_name');
-      if(!refName) {
+      if (!refName) {
         localStorage.setItem('ref_name', projectName);
         refName = projectName;
       }
-      
+      // return;
+
       if (firstSelection || projectName != refName || !trg_usfm_bookId || (dataSrcBook && trg_usfm_bookId.toUpperCase() !== currentBook.bookId)) {
-        convertUsfmToUsj(dataSrcBook).then((usfmToUsj) => {
-          let strUsj = JSON.stringify(usfmToUsj.usj);
-          localStorage.setItem('trg_usj', strUsj);
-          localStorage.setItem('trg_usfm_bookId', usfmToUsj.usj?.content[0]?.code);
-          localStorage.setItem('ref_name', projectName);
-          setReferenceSourceData(strUsj);
-        }).catch((e) => console.error("Error while loading source file", e));
-        setFirstSelection(false);
+        if (!openResourcePopUp) {
+          convertUsfmToUsj(dataSrcBook)
+            .then((usfmToUsj) => {
+              const strUsj = JSON.stringify(usfmToUsj.usj);
+              localStorage.setItem('trg_usj', strUsj);
+              localStorage.setItem('trg_usfm_bookId', usfmToUsj.usj?.content[0]?.code);
+              localStorage.setItem('ref_name', projectName);
+              setReferenceSourceData(strUsj);
+            })
+            .catch((e) => console.error('Error while loading source file', e));
+          setFirstSelection(false);
+        }
       }
     }).catch((e) => console.error("Error while loading source file", e));
   }, [bookId, openResourcePopUp, referenceResources.refName]);

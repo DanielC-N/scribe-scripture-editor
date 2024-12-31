@@ -505,14 +505,6 @@ export default function EditorSection({
     const [currentBook] = _books.filter((bookObj) => bookObj.bookId === bookId?.toUpperCase());
     // const projectCachePath = path.join(newpath, packageInfo.name, 'users', userName, 'project_cache', projectName);
     if (currentBook) {
-      // const fileData = await readFile({ projectname: projectName, filename: currentBook.fileName, username: userName });
-      // const book = {
-      //   selectors: { org: 'unfoldingWord', lang: 'en', abbr: 'ult' },
-      //   bookCode: currentBook.bookId?.toLowerCase(),
-      //   data: fileData,
-      // };
-
-
       let response = null;
       const USJ = localStorage.getItem('usj');
       // console.log("SOURCE ==",JSON.parse(referenceSourceData));
