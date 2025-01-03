@@ -436,7 +436,7 @@ export default function EditorSection({
 
   }
 
-  const onReferenceClick = (source_ref, source_chapter, source_verse, text = '') => {
+  const onReferenceClick = async (source_ref, source_chapter, source_verse, text = '') => {
     let ref = null;
     if (source_ref) {
       ref = source_ref;
@@ -466,9 +466,14 @@ export default function EditorSection({
     elementToScrollTo.push(highlightVerse(clicked_chapter, clicked_verse));
     elementToScrollTo.push(scrollToChapterVerse(clicked_chapter, clicked_verse));
 
+    function delay(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
     for(const elem of elementToScrollTo) {
       if(elem) {
-        elem.scrollIntoView({ top: elem.offsetTop, behavior: "smooth", block: 'center' });
+        elem.scrollIntoView({ top: elem.offsetTop, behavior: "auto", block: 'center' });
+        await delay(500);
       }
     }
   }
