@@ -21,7 +21,7 @@ const CheckSelector = ({
   openResourcePopUp
 }) => {
 
-  const [theProjectName, setTheProjectName] = useState('');
+  const [theProjectNameClean, setTheProjectNameClean] = useState('');
   const [firstSelection, setFirstSelection] = useState(true);
 
   // function runConversionInWebWorker(dataSrcBook, pathInstance) {
@@ -59,7 +59,7 @@ const CheckSelector = ({
       const currentUser = user?.username;
       const folder = path.join(newpath, packageInfo.name, 'users', `${currentUser}`, 'resources');
       const projectName = `${referenceResources.refName}`;
-      setTheProjectName(projectName);
+      setTheProjectNameClean(projectName.split('_').slice(0,-1).join('_'));
       const normalizedPath = path.join(folder, projectName);
       const metaPath = path.join(normalizedPath, 'metadata.json');
 
@@ -189,7 +189,7 @@ const CheckSelector = ({
           </Menu.Items>
         </Transition>
       </Menu>
-      <span> {theProjectName != '' && theProjectName != 'undefined' ? `Resource selected : ${theProjectName}` : 'No resource selected'}</span>
+      <span> {theProjectNameClean != '' && theProjectNameClean != 'undefined' ? `Resource selected : ${theProjectNameClean}` : 'No resource selected'}</span>
     </div>
   );
 };

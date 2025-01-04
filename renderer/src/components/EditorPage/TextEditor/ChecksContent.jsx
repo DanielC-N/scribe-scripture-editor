@@ -41,7 +41,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 
 	return (
 		<div className="w-full max-w-4xl mx-auto" style={{ height: '100vh' }}>
-			<div className='bg-primary flex justify-between items-center p-4 rounded-lg sticky top-0 z-10'>
+			<div className='bg-primary flex justify-between items-center p-4 rounded-lg sticky top-0 z-0'>
 				<h2 className='text-white font-bold text-lg'>Checks</h2>
 				<button
 					className={`top-4 right-4 text-white p-2 rounded-full bg-orange-500 hover:bg-orange-600 focus:outline-none focus:ring-2 focus:ring-orange-500 ${isRefreshing ? 'animate-spin' : ''}`}
@@ -58,7 +58,7 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 							{({ open }) => (
 								<>
 									<Disclosure.Button
-										className='flex justify-between w-full px-4 py-3 text-sm font-medium text-left bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none sticky top-0 z-10 shadow'
+										className='flex justify-between w-full px-4 py-3 text-sm font-medium text-left bg-gray-200 rounded-lg hover:bg-gray-300 focus:outline-none sticky top-0 z-0 shadow'
 										style={{
 											top: '-1.5rem',
 											backgroundColor: open ? '#f3f4f6' : '#e5e7eb',
@@ -89,6 +89,9 @@ export default function ChecksContent({ content, updateContent, onReferenceClick
 																<div className="text-gray-800">
 																	<span className='font-bold'>Type:</span> {issue.comment}{' '}{issue.difference ? `(${issue.difference})` : ''}
 																</div>
+																{issue.verse_text && (<div className="text-gray-800">
+																	<span className='font-bold'>Source verse:</span> {issue.verse_text}
+																</div>)}
 																<div className="text-gray-800">
 																	<span className='font-bold'>Reference:</span>{' '}
 																	<button
