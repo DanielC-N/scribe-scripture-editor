@@ -489,16 +489,7 @@ export default function EditorSection({
     const newpath = localStorage.getItem('userPath');
     const metaPath = path.join(newpath, packageInfo.name, 'users', userName, 'projects', projectName, 'metadata.json');
     const metaData = JSON.parse(await readRefBurrito({ metaPath }));
-    const filePath = path.join(newpath, packageInfo.name, 'config_checks.json');
-    let spec = {};
-    try {
-      spec = fse.readJsonSync(filePath);
-    } catch (error) {
-      logger.error(
-        'EditorSection.js',
-        'Unable to open config_checks.json',
-      );
-    }
+    
     const _books = [];
     Object.entries(metaData.ingredients).forEach(async ([key, _ingredients]) => {
       if (_ingredients.scope) {
@@ -508,7 +499,6 @@ export default function EditorSection({
       }
     });
     const [currentBook] = _books.filter((bookObj) => bookObj.bookId === bookId?.toUpperCase());
-    // const projectCachePath = path.join(newpath, packageInfo.name, 'users', userName, 'project_cache', projectName);
     if (currentBook) {
       let response = null;
       const USJ = localStorage.getItem('usj');
@@ -522,7 +512,6 @@ export default function EditorSection({
       }
       if (response) {
         setContentChecks(response.checks);
-        // console.log("response ==", response.checks);
       }
     }
   }
